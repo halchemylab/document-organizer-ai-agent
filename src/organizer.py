@@ -39,6 +39,8 @@ def build_plan_for_directory(directory: str, model: str = config.DEFAULT_MODEL) 
         try:
             if file_ext == ".pdf":
                 text_excerpt = tools.extract_text_from_pdf(file_path)
+            elif file_ext == ".docx":
+                text_excerpt = tools.extract_text_from_docx(file_path)
             elif file_ext in config.IMAGE_EXTENSIONS:
                 text_excerpt = tools.extract_text_from_image(file_path)
             elif file_ext in config.TEXT_EXTENSIONS:

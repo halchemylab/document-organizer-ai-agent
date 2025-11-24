@@ -20,7 +20,7 @@ DEFAULT_MODEL = "gpt-4o-mini"
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".heic", ".webp"]
 
 # A list of text file extensions that the application will read.
-TEXT_EXTENSIONS = [".txt", ".md", ".rtf"]
+TEXT_EXTENSIONS = [".txt", ".md", ".rtf", ".docx"]
 
 # Maximum characters to extract from a file to avoid overly long prompts.
 MAX_CHARS_PER_FILE = 8000

@@ -4,6 +4,7 @@ PyPDF2
 Pillow
 pytesseract
 python-dotenv
+python-docx
 # Tkinter is required for the folder picker dialog.
 # It's usually included with Python installations, but may require
 # a separate system package on some Linux distributions (e.g., `sudo apt-get install python3-tk`).

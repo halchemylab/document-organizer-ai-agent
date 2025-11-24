@@ -14,6 +14,7 @@ from datetime import datetime
 import PyPDF2
 from PIL import Image
 import pytesseract
+import docx
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -82,6 +83,28 @@ def extract_text_from_pdf(path: str) -> str:
     except Exception as e:
         logging.error(f"Failed to read or parse PDF {path}: {e}")
     return ""
+
+
+def extract_text_from_docx(path: str) -> str:
+    """
+    Extracts text content from a Microsoft Word (.docx) file.
+
+    Args:
+        path: The path to the .docx file.
+
+    Returns:
+        The concatenated text from all paragraphs, or an empty string if
+        extraction fails.
+    """
+    logging.info(f"Extracting text from DOCX: {path}")
+    text = ""
+    try:
+        doc = docx.Document(path)
+        for para in doc.paragraphs:
+            text += para.text + "\n"
+    except Exception as e:
+        logging.error(f"Failed to read or parse DOCX {path}: {e}")
+    return text
 
 
 def extract_text_from_image(path: str) -> str:
