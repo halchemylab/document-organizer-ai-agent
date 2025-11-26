@@ -67,14 +67,33 @@ def build_plan_for_directory(directory: str, model: str = config.DEFAULT_MODEL) 
 
         suggested_basename = classification.get("suggested_basename", f"unclassified_{Path(file_info['name']).stem}")
         
+        category = classification.get("category")
+        # Sanitize category for filesystem safety. Remove path separators.
+        safe_category = ""
+        if category:
+            # Replace common path separators with underscores and strip leading/trailing whitespace
+            safe_category = category.replace("/", "_").replace("\\", "_").strip()
+            # Further sanitize to remove any characters that might be problematic for filenames
+            # For simplicity, let's keep it to alphanumeric and underscores
+            safe_category = "".join(c for c in safe_category if c.isalnum() or c == '_').strip('_')
+            
+        final_file_name = f"{suggested_basename}{file_ext}"
+
+        if safe_category:
+            # Construct new path with category as a subfolder
+            suggested_new_path = Path(directory) / safe_category / final_file_name
+        else:
+            # If no category or sanitized category is empty, keep in the main directory
+            suggested_new_path = Path(directory) / final_file_name
+
         # Assemble the plan entry
         plan_entry = {
             "old_path": file_info["path"],
             "old_name": file_info["name"],
             "extension": file_ext,
             "suggested_basename": suggested_basename,
-            "suggested_new_name": f"{suggested_basename}{file_ext}",
-            "suggested_new_path": str(Path(directory) / f"{suggested_basename}{file_ext}"),
+            "suggested_new_name": suggested_new_path.name, # Update this to reflect actual file name
+            "suggested_new_path": str(suggested_new_path), # This is the full path
             "category": classification.get("category"),
             "confidence": classification.get("confidence"),
             "date": classification.get("date"),
