@@ -25,6 +25,25 @@ TEXT_EXTENSIONS = [".txt", ".md", ".rtf", ".docx"]
 # Maximum characters to extract from a file to avoid overly long prompts.
 MAX_CHARS_PER_FILE = 8000
 
+# List of allowed categories for file classification
+CATEGORIES = [
+    "insurance",
+    "ticket",
+    "vote",
+    "legal",
+    "personal",
+    "screenshot",
+    "receipt",
+    "finance",
+    "work",
+    "invoice",
+    "manual",
+    "medical",
+    "travel",
+    "education",
+    "other",
+]
+
 # Perform a basic check for the API key on import
 def check_api_key():
     """Checks for the presence of the OpenAI API key and raises an error if not found."""

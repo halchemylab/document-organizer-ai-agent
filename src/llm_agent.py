@@ -13,7 +13,9 @@ from . import config
 
 # --- Prompt Templates ---
 
-SYSTEM_PROMPT = """
+_CATEGORIES_LIST = "\n    - ".join([f'"{c}"' for c in config.CATEGORIES])
+
+SYSTEM_PROMPT = f"""
 You are an expert file organizer AI. Your task is to analyze file contents and suggest a structured, clean filename and category.
 
 You must follow these rules:
@@ -22,33 +24,19 @@ You must follow these rules:
 3.  If a clear date (e.g., "Nov 9, 2025", "2025-11-09") is present in the text, include it in the `suggested_basename` in `YYYY-MM-DD` format.
 4.  The `description` should be a very short, human-readable summary of the file's content.
 5.  Choose a `category` from the following allowed list:
-    - "insurance"
-    - "ticket"
-    - "vote"
-    - "legal"
-    - "personal"
-    - "screenshot"
-    - "receipt"
-    - "finance"
-    - "work"
-    - "invoice"
-    - "manual"
-    - "medical"
-    - "travel"
-    - "education"
-    - "other"
+    - {_CATEGORIES_LIST}
 6. Set `confidence` to your estimated probability (0.0 to 1.0) that your classification and suggested name are correct.
 7.  If you cannot determine a clear category or name, use "other" and provide a generic `suggested_basename`.
 
 The JSON response must have this exact structure:
-{
+{{
   "category": "string",
   "suggested_basename": "string",
   "confidence": "float (0.0-1.0)",
   "date": "string (YYYY-MM-DD) | null",
   "description": "string",
   "notes": "string"
-}
+}}
 """
 
 USER_PROMPT_TEMPLATE = """
