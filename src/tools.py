@@ -1,10 +1,12 @@
+"""
 Low-level filesystem and content extraction tools.
 
 This module provides pure helper functions for interacting with the filesystem,
 extracting text from different file types (PDF, images, text), and performing
 file operations like renaming. These functions do not contain any AI/LLM logic.
+"""
 
-```python
+
 import os
 import json
 import logging
@@ -216,4 +218,3 @@ def write_metadata_json(directory: str, records: list[dict], filename: str = "me
     except Exception as e:
         logging.error(f"Failed to write metadata file at {output_path}: {e}")
         return ""
-```
