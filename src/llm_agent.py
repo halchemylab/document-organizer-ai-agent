@@ -6,6 +6,8 @@ a file based on its content and suggest a new filename and category.
 """
 import json
 import logging
+import time
+import random
 
 from openai import OpenAI, OpenAIError
 
@@ -97,34 +99,41 @@ def classify_file_with_llm(
         excerpt_len=len(text_excerpt)
     )
 
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.2,
-            response_format={"type": "json_object"}
-        )
-        
-        content = response.choices[0].message.content
-        if not content:
-            raise ValueError("API returned an empty response.")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.2,
+                response_format={"type": "json_object"}
+            )
             
-        # The API should return valid JSON because of response_format,
-        # but we parse defensively anyway.
-        parsed_json = json.loads(content)
-        logging.info(f"Successfully classified '{filename}' as category '{parsed_json.get('category', 'N/A')}'.")
-        return parsed_json
+            content = response.choices[0].message.content
+            if not content:
+                raise ValueError("API returned an empty response.")
+                
+            # The API should return valid JSON because of response_format,
+            # but we parse defensively anyway.
+            parsed_json = json.loads(content)
+            logging.info(f"Successfully classified '{filename}' as category '{parsed_json.get('category', 'N/A')}'.")
+            return parsed_json
 
-    except (OpenAIError, json.JSONDecodeError, ValueError) as e:
-        logging.error(f"Failed to classify file '{filename}': {e}")
-        return {
-            "category": "error",
-            "suggested_basename": f"error_{filename.rsplit('.', 1)[0]}",
-            "confidence": 0.0,
-            "date": None,
-            "description": f"Failed to process: {e}",
-            "notes": "The AI model could not process this file.",
-        }
+        except (OpenAIError, json.JSONDecodeError, ValueError) as e:
+            if attempt < max_retries - 1:
+                delay = 1 * (2 ** attempt) + random.uniform(0, 1)
+                logging.warning(f"Error classifying '{filename}': {e}. Retrying in {delay:.2f}s...")
+                time.sleep(delay)
+            else:
+                logging.error(f"Failed to classify file '{filename}' after {max_retries} attempts: {e}")
+                return {
+                    "category": "error",
+                    "suggested_basename": f"error_{filename.rsplit('.', 1)[0]}",
+                    "confidence": 0.0,
+                    "date": None,
+                    "description": f"Failed to process: {e}",
+                    "notes": "The AI model could not process this file.",
+                }
