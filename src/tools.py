@@ -87,7 +87,7 @@ def extract_text_from_pdf(path: str) -> str:
                     logging.debug(f"No text found on page {i+1} of {path}")
     except (PdfReadError, OSError) as e:
         logging.error(f"Failed to read or parse PDF {path}: {e}")
-    return ""
+    return text
 
 
 def extract_text_from_docx(path: str) -> str:
