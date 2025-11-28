@@ -48,8 +48,8 @@ def build_plan_for_directory(directory: str, model: str = config.DEFAULT_MODEL) 
             else:
                 logging.info(f"Skipping file with unhandled extension: {file_info['name']}")
                 continue # Skip files we don't know how to process
-        except Exception as e:
-            logging.error(f"Fatal error extracting text from {file_info['name']}: {e}")
+        except (OSError, ValueError) as e:
+            logging.error(f"Error extracting text from {file_info['name']}: {e}")
             # Even on error, we can try to classify based on filename alone
             text_excerpt = f"Error reading file content: {e}"
 

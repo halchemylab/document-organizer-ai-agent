@@ -14,9 +14,12 @@ from pathlib import Path
 from datetime import datetime
 
 import PyPDF2
-from PIL import Image
+from PyPDF2.errors import PdfReadError
+from PIL import Image, UnidentifiedImageError
 import pytesseract
+from pytesseract import TesseractNotFoundError, TesseractError
 import docx
+from docx.opc.exceptions import PackageNotFoundError
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -50,7 +53,7 @@ def list_files(directory: str) -> list[dict]:
                     "size_bytes": stat.st_size,
                     "modified_time": datetime.fromtimestamp(stat.st_mtime).isoformat(),
                 })
-            except (FileNotFoundError, PermissionError) as e:
+            except (FileNotFoundError, PermissionError, OSError) as e:
                 logging.warning(f"Could not access file {item.name}: {e}")
 
     logging.info(f"Found {len(files)} files in {directory}.")
@@ -82,7 +85,7 @@ def extract_text_from_pdf(path: str) -> str:
                     text += page_text + "\n\n"
                 else:
                     logging.debug(f"No text found on page {i+1} of {path}")
-    except Exception as e:
+    except (PdfReadError, OSError) as e:
         logging.error(f"Failed to read or parse PDF {path}: {e}")
     return ""
 
@@ -104,7 +107,7 @@ def extract_text_from_docx(path: str) -> str:
         doc = docx.Document(path)
         for para in doc.paragraphs:
             text += para.text + "\n"
-    except Exception as e:
+    except (PackageNotFoundError, ValueError, OSError) as e:
         logging.error(f"Failed to read or parse DOCX {path}: {e}")
     return text
 
@@ -127,11 +130,11 @@ def extract_text_from_image(path: str) -> str:
         with Image.open(path) as img:
             text = pytesseract.image_to_string(img)
             return text
-    except pytesseract.TesseractNotFoundError:
+    except TesseractNotFoundError:
         logging.error("Tesseract is not installed or not in your PATH. Cannot perform OCR.")
         # Re-raise to make it a fatal error for image processing if Tesseract is missing
         raise
-    except Exception as e:
+    except (TesseractError, UnidentifiedImageError, OSError) as e:
         logging.error(f"Failed to perform OCR on image {path}: {e}")
     return ""
 
@@ -152,7 +155,7 @@ def read_text_file(path: str, max_chars: int = 10000) -> str:
         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read(max_chars)
         return content
-    except Exception as e:
+    except (OSError, UnicodeDecodeError) as e:
         logging.error(f"Failed to read text file {path}: {e}")
     return ""
 
@@ -188,7 +191,7 @@ def rename_file(old_path: str, new_path: str) -> str:
         old_p.rename(final_path)
         logging.info(f"Renamed '{old_p.name}' to '{final_path.name}'")
         return str(final_path.resolve())
-    except Exception as e:
+    except OSError as e:
         logging.error(f"Failed to rename file from {old_path} to {final_path}: {e}")
         return old_path
 
@@ -215,6 +218,6 @@ def write_metadata_json(directory: str, records: list[dict], filename: str = "me
             json.dump(records, f, indent=4)
         logging.info(f"Successfully wrote metadata to {output_path}")
         return str(output_path.resolve())
-    except Exception as e:
+    except OSError as e:
         logging.error(f"Failed to write metadata file at {output_path}: {e}")
         return ""
