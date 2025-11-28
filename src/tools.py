@@ -20,6 +20,7 @@ import pytesseract
 from pytesseract import TesseractNotFoundError, TesseractError
 import docx
 from docx.opc.exceptions import PackageNotFoundError
+from pdf2image import convert_from_path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -87,6 +88,22 @@ def extract_text_from_pdf(path: str) -> str:
                     logging.debug(f"No text found on page {i+1} of {path}")
     except (PdfReadError, OSError) as e:
         logging.error(f"Failed to read or parse PDF {path}: {e}")
+
+    # Fallback to OCR if text extraction yielded little result (scanned PDF)
+    if len(text.strip()) < 50:
+        logging.info(f"PDF {path} seems to be scanned (little text found). Attempting OCR...")
+        try:
+            images = convert_from_path(path)
+            ocr_text = ""
+            for image in images:
+                ocr_text += pytesseract.image_to_string(image) + "\n\n"
+            
+            if len(ocr_text.strip()) > len(text.strip()):
+                return ocr_text
+        except Exception as e:
+            # This catches pdf2image errors (e.g. poppler missing) or pytesseract errors
+            logging.error(f"Failed to OCR PDF {path}: {e}")
+
     return text
 
 
