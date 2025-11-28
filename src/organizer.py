@@ -5,6 +5,7 @@ This module ties together the file tools and the LLM agent to build
 and apply an organization plan for a directory.
 """
 import logging
+import json
 import concurrent.futures
 from pathlib import Path
 
@@ -195,4 +196,63 @@ def organize_directory(directory: str, model: str = config.DEFAULT_MODEL, apply:
         metadata_path = tools.write_metadata_json(directory, applied_plan)
         summary["metadata_path"] = metadata_path
 
+    return summary
+
+
+def undo_organization(directory: str) -> dict:
+    """
+    Reverses the organization process using the metadata.json file.
+
+    Args:
+        directory: The directory to undo changes in.
+
+    Returns:
+        A summary dictionary of the undo operation.
+    """
+    metadata_path = Path(directory) / "metadata.json"
+    summary = {
+        "directory": directory,
+        "undo_successful": False,
+        "files_restored": 0,
+        "errors": 0
+    }
+
+    if not metadata_path.exists():
+        logging.error(f"No metadata.json found in {directory}. Cannot undo.")
+        return summary
+
+    try:
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            records = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        logging.error(f"Failed to read metadata.json: {e}")
+        return summary
+
+    logging.info(f"Undoing organization for {len(records)} files...")
+    
+    # Process in reverse order of application (LIFO) just in case
+    for record in reversed(records):
+        # If the file wasn't moved (e.g. error category), skip
+        if record.get("final_new_path") == record.get("old_path"):
+            continue
+
+        current_path = record.get("final_new_path")
+        original_path = record.get("old_path")
+
+        if current_path and original_path:
+            # We use rename_file to safely move it back. 
+            # If the original spot is taken (unlikely unless user messed with it), 
+            # it will auto-rename, which is safer than overwriting.
+            restored_path = tools.rename_file(current_path, original_path)
+            
+            if restored_path:
+                summary["files_restored"] += 1
+            else:
+                summary["errors"] += 1
+        else:
+            logging.warning(f"Skipping invalid record: {record}")
+            summary["errors"] += 1
+
+    summary["undo_successful"] = True
+    logging.info(f"Undo complete. Restored {summary['files_restored']} files.")
     return summary

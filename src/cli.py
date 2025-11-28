@@ -32,6 +32,11 @@ def main():
         action="store_true",
         help="Enable verbose logging."
     )
+    parser.add_argument(
+        "--undo",
+        action="store_true",
+        help="Undo the last organization based on metadata.json in the directory."
+    )
 
     args = parser.parse_args()
 
@@ -39,6 +44,19 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
 
     try:
+        if args.undo:
+            print(f"Undoing organization in '{args.directory}'...")
+            result = organizer.undo_organization(args.directory)
+            
+            print("\n--- Undo Summary ---")
+            if result["undo_successful"]:
+                print(f"Successfully restored {result['files_restored']} files.")
+                if result["errors"] > 0:
+                    print(f"Encountered {result['errors']} errors during undo.")
+            else:
+                print("Undo failed. Check logs/output for details (likely missing metadata.json).")
+            return
+
         if args.apply:
             print(f"Organizing directory '{args.directory}' and applying changes...")
         else:
