@@ -75,3 +75,37 @@ def test_apply_plan(mocker):
     
     # Second one skipped (error category)
     assert updated_plan[1]["final_new_path"] == "/tmp/err.txt"
+
+def test_undo_organization(mocker):
+    # Mock file existence
+    mocker.patch("pathlib.Path.exists", return_value=True)
+    
+    # Mock reading metadata.json
+    mock_data = [
+        {
+            "old_path": "/tmp/original.txt",
+            "final_new_path": "/tmp/moved.txt"
+        },
+        {
+            "old_path": "/tmp/fail.txt",
+            "final_new_path": "/tmp/fail.txt" # Same path, should be skipped
+        }
+    ]
+    
+    mock_open = mocker.patch("builtins.open", mocker.mock_open(read_data="[]"))
+    # We need to mock json.load because mock_open's read_data is a string, 
+    # but json.load expects a file-like object. 
+    # Easier to mock json.load directly for the return value.
+    mocker.patch("json.load", return_value=mock_data)
+    
+    # Mock rename
+    mock_rename = mocker.patch("src.tools.rename_file", return_value="/tmp/original.txt")
+    
+    summary = organizer.undo_organization("/tmp")
+    
+    assert summary["undo_successful"] is True
+    assert summary["files_restored"] == 1
+    
+    # Verify rename was called for the first item
+    mock_rename.assert_called_once_with("/tmp/moved.txt", "/tmp/original.txt")
+

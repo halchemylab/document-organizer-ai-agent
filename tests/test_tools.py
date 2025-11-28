@@ -139,3 +139,25 @@ def test_extract_text_from_image_no_tesseract(mocker, tmp_path):
     
     with pytest.raises(TesseractNotFoundError):
         tools.extract_text_from_image(str(img_path))
+
+def test_extract_text_from_pdf_scanned(mocker, tmp_path):
+    pdf_path = tmp_path / "scanned.pdf"
+    pdf_path.touch()
+
+    # Mock PyPDF2 to return empty text
+    mock_reader = MagicMock()
+    mock_reader.is_encrypted = False
+    page1 = MagicMock()
+    page1.extract_text.return_value = "" # Empty text
+    mock_reader.pages = [page1]
+    
+    # Patch the PyPDF2 module imported in src.tools
+    mock_pypdf2 = mocker.patch("src.tools.PyPDF2")
+    mock_pypdf2.PdfReader.return_value = mock_reader
+
+    # Mock pdf2image and pytesseract
+    mocker.patch("src.tools.convert_from_path", return_value=[MagicMock()]) # Return one image
+    mocker.patch("src.tools.pytesseract.image_to_string", return_value="OCR Content")
+
+    text = tools.extract_text_from_pdf(str(pdf_path))
+    assert "OCR Content" in text
